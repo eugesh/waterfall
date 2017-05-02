@@ -1,0 +1,6 @@
+.project
+.cproject
+.settings
+bin
+build
+doc/documentation
