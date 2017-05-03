@@ -3,23 +3,21 @@
 #include <QtGui>
 #include <QThread>
 
-class settings {
+class SonarEmuSts {
  protected:;
-   QString name_in ;
-   QString name_out;
-   QSize q_out_size;
-   QVector<QPointF> qvqp_x; //-x+y+x-y
+   QString _fullname_tmp_tiff ;
+   int _acoustic_channel_id;
+   int _project_id;
+   double _time_delay;
  public:
-   //settings(QString i,QString o, QVector<QPoint> x) {name_in=i;name_out=o;qvqp_x=x;};
-   void set_in_name (QString n) {name_in =n;};
-   void set_out_name(QString n) {name_out=n;};
-   void set_point   (QVector<QPointF> x) {qvqp_x=x;};
-   void set_size_out(QSize s) {q_out_size=s;};
-   settings( ) ;
+   void set_fullname_tmp_tiff (QString n) {_fullname_tmp_tiff =n;};
+   void set_acoustic_channel_id (int id) {_acoustic_channel_id = id;};
+   void set_project_id (int id) {_project_id = id;};
+   void set_time_delay (double td){_time_delay = td;};
+   SonarEmuSts () ;
 };
 
-
-class SonarEmuThread : public QThread { //, public settings {
+class SonarEmuThread : public QThread , public SonarEmuSts {
     Q_OBJECT
 public: ;
     QProgressBar *progressbar;
@@ -28,7 +26,10 @@ public:;
     virtual ~SonarEmuThread () {;} ;
 
 protected: ;
-    virtual void run ();
+    virtual void run () { start_write_full_tiff (); };
+    void start_sonar_emu_view ();
+    void start_write_tiff ();
+    void start_write_full_tiff ();
 signals:;
     void number_worked_lines (int nl);
 };

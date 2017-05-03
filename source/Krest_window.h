@@ -16,8 +16,8 @@
 #include <QVector3D>
 #include <stdio.h>
 #include <iostream>
-#include "hyscan-acoustic-data.h"
-#include "hyscan-db.h"
+// #include "hyscan-acoustic-data.h"
+// #include "hyscan-db.h"
 
 #include "RubberRect.h"
 //#include <QMutex>
@@ -31,6 +31,7 @@
 //#include "moiGdal.h"
 #include "Krest_scene.h"
 #include "cthread.h"
+#include "sonar_emu_thread.h"
 
 class QAction;
 class QGraphicsItem;
@@ -39,6 +40,9 @@ class QGraphicsView;
 class KrestView;
 
 double MathRound(double num, int precision);
+
+// Creates temporal tiff file. Takes path. Returns path + filename.
+QString create_tmp_tiff (QString fullfilename, int w, int h);
 
 //! Класс, описывающий окно отображения кадра
 class KrestWindow : public QMainWindow , public Ui::MainWindow {
@@ -50,9 +54,10 @@ private:;
 	double c,r;//!< положение курсора
 	QAction *pushButtonFit;
 	CThread*pThread ;
+	SonarEmuThread *pThread_sound_gen;
 	QPointF startPos,endPos; //начальная/конечноя позиции курсора при зуммировании
 	Krest KrestXL,KrestXR,KrestYU,KrestYD;
-	HyScanDB *DB;
+	// HyScanDB *DB;
 //public:;
     double PixelSize;//размер пикселя в мм
     double FrameSizeMm;//размер рамки в мм
@@ -72,11 +77,14 @@ private:;
     QString pathOut ;//image path
     QString pathPoint ;//points path
     QString tmp_tiff_path;
+    QString tmp_tiff_full_name;
     QString bd_path;
     QString project_dir_name;
+    // int database_id;
     int project_id;
-    GDALDataset *ptmp_tiff;
-    GDALDriver *pdriver_tmp_tiff;
+    int acoustic_data_ch_id;
+    // GDALDataset *ptmp_tiff;
+    // GDALDriver *pdriver_tmp_tiff;
 public:;
   	//! конструктор
     KrestWindow();
@@ -94,8 +102,7 @@ private slots:;
    void set_tmp_tiff_path();
    void start_sound_gen();
    void stop_sound_gen();
-   void set_time_delay();
-   void openImage ();
+   void openImageDialog ();
    void openPoints();
    void savePoints();
    void savePointsAs(); 
@@ -137,10 +144,13 @@ private slots:;
    void ScaleFit(){graphicsView->fitInView(scene->itemsBoundingRect(),Qt::KeepAspectRatio);} ;
    void ScaleRubberFit(QRect);
    void StopProcess();
+   // May receive number of worked lines
+   void update_scene (int nwl=0);
 private:;
     void createActions();
     void createMenus();
     void setupKrest(Krest *krest,QPointF F );
+    void openImage (QString fullfilename);
 
     //void setupKrest(Krest *krest);
 protected:;

@@ -124,12 +124,12 @@ void QGraphicsItem_Image::paint ( QPainter * painter, const QStyleOptionGraphics
           hw=yw2-yw1+1;
 
       if (number_bands==1) {
-            // обработка однослойного растра
+       // обработка однослойного растра
        im=QImage(ww,hw,QImage::Format_Indexed8);
        bpp=1;
        nb_working=1;
 
-            // формирование таблицы цветов
+       // формирование таблицы цветов
        int k;
        im.setNumColors(256);
        // чтение таблицы цветов

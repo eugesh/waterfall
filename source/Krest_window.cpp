@@ -77,7 +77,7 @@ KrestWindow::KrestWindow() {
 	FrameSizeMm=0.0;
 	FrameSizePx=0;
 	PixelSize=1.0;
-	time_delay = 1.0;
+	time_delay = 0.1;
 	cutting = false;
 	cut_count = 0;
 	iscutting=false;
@@ -92,7 +92,7 @@ KrestWindow::KrestWindow() {
 	QIDSTDSec->setDoubleMaximum(2147483647.0);
 	QIDSFSMm->setDoubleMinimum(0);
 	QIDSFSPx->setIntMinimum(0);
-	QIDSTDSec->setDoubleMinimum(0.01);
+	QIDSTDSec->setDoubleMinimum(0.00000001);
 	QIDSFSMm->setCancelButtonText(tr("Выход"));
 	QIDSFSPx->setCancelButtonText(tr("Выход"));
 	QIDSTDSec->setCancelButtonText(tr("Выход"));
@@ -341,7 +341,7 @@ void KrestWindow::createActions( )
     connect(action_Quit, SIGNAL(triggered()), this, SLOT(close()));
     //connect(actionTransform,SIGNAL(triggered()),this,SLOT(pressed_button_run2()));  //траснсформирование
     connect(actionTransform,SIGNAL(triggered()),this,SLOT(run_process()));  //траснсформирование
-    connect(action_OpenImage, SIGNAL(triggered()), this, SLOT(openImage()));
+    connect(action_OpenImage, SIGNAL(triggered()), this, SLOT(openImageDialog()));
     connect(action_OpenImage, SIGNAL(triggered()), this, SLOT(endCut()));
     connect(action_OpenImage, SIGNAL(triggered()), this, SLOT(pickAllKrest()));
     connect(action_OpenImage, SIGNAL(triggered()), this, SLOT(del()));
@@ -381,10 +381,10 @@ void KrestWindow::createActions( )
     connect(action_set_delay, SIGNAL(triggered()), this, SLOT(setTimeDelay()));
     connect(action_OutImage_2, SIGNAL(triggered()), this, SLOT(SaveTrAs()) );
     action_OutImage_2->setShortcut(tr("Ctrl+S"));
-    connect(action_start_sound_gen, SIGNAL(triggered()), this, SLOT());
+    connect(action_start_sound_gen, SIGNAL(triggered()), this, SLOT(start_sound_gen()));
     action_start_sound_gen->setEnabled(false);
     action_start_sound_gen->setShortcut(tr("Ctrl+R"));
-    connect(action_stop_sound_gen, SIGNAL(triggered()), this, SLOT());
+    connect(action_stop_sound_gen, SIGNAL(triggered()), this, SLOT(stop_sound_gen()));
     action_stop_sound_gen->setEnabled(false);
     action_stop_sound_gen->setShortcut(tr("Ctrl+T"));
     //connect(action_save_tr, SIGNAL(triggered()), this, SLOT(SaveTr()) );
@@ -584,32 +584,70 @@ void KrestWindow::openProject() {
 	    std::cout << "project_dir_name = " << qPrintable(project_dir_name) << '\n';
 
 	    QString uri = QString ("file://%1").arg(bd_path);
-	    connect_to_bd (uri.toAscii().data());
+	    int bd_check = connect_to_bd (uri.toAscii().data());
 
 	    project_id = open_project (project_dir_name.toAscii().data());
 
-	    int ad_id = acoustic_data_new (project_dir_name.toAscii().data(),"Track01",101,1);
+	    acoustic_data_ch_id = acoustic_data_new (project_dir_name.toAscii().data(),"Track01",101,1);
 
 	    // Get track range (W = max(values), H = last_index - first_index)
-	    int tmpiff_W;
-	    int tmpiff_H = get_last_index_in_range (ad_id) - get_first_index_in_range (ad_id);
+	    int tmp_tiff_W;
+	    int tmp_tiff_H = get_last_index_in_range (acoustic_data_ch_id) - get_first_index_in_range (acoustic_data_ch_id);
 
-	    for (int i = 0; i < tmpiff_H; ++i) {
-	        unsigned int val = get_values_count (ad_id, i);
-	        if(val > tmpiff_W)
-	            tmpiff_W = val;
+	    for (int i = 0; i < tmp_tiff_H; ++i) {
+	        unsigned int val = get_values_count (acoustic_data_ch_id, i);
+	        if (val > tmp_tiff_W)
+	            tmp_tiff_W = val;
 	    }
+	    std::cout << "tmpiff_W = " << tmp_tiff_W << ", tmpiff_H = "<< tmp_tiff_H << '\n';
 	    // Create tmp TIFF file
-	    GDALAllRegister ();
-	    pdriver_tmp_tiff =(GDALDriver*) GDALGetDriverByName ("GTiff");
+	    tmp_tiff_full_name = create_tmp_tiff (tmp_tiff_path, tmp_tiff_W, tmp_tiff_H);
+	    openImage (tmp_tiff_full_name);
 
-
-	    action_start_sound_gen->setEnabled(true);
-	    action_stop_sound_gen->setEnabled(true);
+	    action_start_sound_gen->setEnabled (true);
+	    action_stop_sound_gen->setEnabled (true);
 	} else {
-		QMessageBox::information(this, tr("WaterImage"),
-	         tr("Директория не была открыта %1.").arg(bd_path));
+		QMessageBox::information (this, tr ("WaterImage"),
+	         tr ("Директория не была открыта %1.").arg (bd_path));
 	}
+}
+
+QString create_tmp_tiff (QString filename, int w, int h) {
+    GDALAllRegister () ;
+    GDALDriver*pDriver = (GDALDriver*) GDALGetDriverByName ("GTiff" ) ;
+
+    char block_size_str[100];
+    char **pcreate_str = 0;
+
+    int _NumBands = 1 ;
+    int _nPixelSpace = 0 ;
+
+    QString filenameTiff = filename + "/tmp.tif" ;
+    std::cout << "filenameTiff = " << qPrintable (filenameTiff) << '\n';
+
+	sprintf (block_size_str, "%d", 128);
+
+	pcreate_str = CSLSetNameValue(pcreate_str, "BLOCKXSIZE", block_size_str);
+	pcreate_str = CSLSetNameValue(pcreate_str, "BLOCKYSIZE", block_size_str);
+
+	pcreate_str = CSLSetNameValue(pcreate_str,"TILED","YES");
+
+	GDALDataset *_pData = pDriver->Create( filenameTiff.toLocal8Bit().data(), w, h, _NumBands, GDT_Byte, pcreate_str ) ;
+    if(!_pData){
+      printf("CreateGeoTIFF : Can't open file <%s>\n", filenameTiff.toLocal8Bit().data()) ;
+      return QString ();
+    } else {
+        ///-----Проверка имеющихсЯ копий-------------------------------------
+        int numCount = (_pData->GetRasterBand (1))->GetOverviewCount ();
+        QFile ovrfile (filenameTiff + ".ovr");
+           if(!ovrfile.exists () && numCount == 0) {
+               int anOverviewList[3] = { 4, 8, 16};
+               _pData->BuildOverviews ("NEAREST", 3, anOverviewList, 0, NULL,
+                                          NULL, NULL);
+           }
+    	GDALClose(_pData) ;
+    }
+    return filenameTiff;
 }
 
 void KrestWindow::set_tmp_tiff_path() {
@@ -623,30 +661,51 @@ void KrestWindow::set_tmp_tiff_path() {
 	}
 }
 
-void KrestWindow::start_sound_gen() {
+void KrestWindow::start_sound_gen () {
+   progressBar->setValue (0);
 
+   pThread_sound_gen = new SonarEmuThread (this) ;
+   pThread_sound_gen->progressbar=progressBar ;
+   pThread_sound_gen->set_fullname_tmp_tiff (tmp_tiff_full_name);
+   pThread_sound_gen->set_acoustic_channel_id (acoustic_data_ch_id);
+   pThread_sound_gen->set_project_id (project_id);
+   pThread_sound_gen->set_time_delay (time_delay);
+   connect (pThread_sound_gen, SIGNAL (finished ()), this, SLOT (stop_sound_gen ()));
+   connect (pThread_sound_gen, SIGNAL (number_worked_lines (int)), this, SLOT (update_scene (int)));
+   pThread_sound_gen->start ();
 }
 
-void KrestWindow::stop_sound_gen() {
-
+void KrestWindow::update_scene (int nwl) {
+    scene->update ();
 }
 
-void KrestWindow::set_time_delay() {
+void KrestWindow::stop_sound_gen () {
+    std::cout<<"StopProcess"<<std::endl;
+    if(pThread_sound_gen) {
+        pThread_sound_gen->quit ();
+        pThread_sound_gen->wait ();
+    }
+    std::cout<<" pThread->wait()"<<std::endl;
 
+    if(pThread_sound_gen)
+        delete pThread_sound_gen ;
+    pThread_sound_gen = NULL ;
+
+    progressBar->setValue(progressBar->maximum());
+    std::cout<<" delete pThread_sound_gen"<<std::endl;
 }
 
-void KrestWindow::openImage( ) {
-   QRegExp tiff_regexp ("(.tiff|.bmp|.jpg|.img|.png|.gif|.tif)");
-   
+void KrestWindow::openImageDialog () {
    QString fileName = QFileDialog::getOpenFileName(this,
-                           tr("Открыть файл"),"E:/Shtanov/images/");
+                           tr("Открыть файл"),"/home/evgeny/data");
     if(!fileName.isEmpty ()) {
        QString name_buf;       
        nameIn = fileName;
-       name_buf=nameIn;       
+       name_buf=nameIn;
+       QRegExp tiff_regexp ("(.tiff|.bmp|.jpg|.img|.png|.gif|.tif)");
        nameOut =name_buf.remove (tiff_regexp)+"_tr";
        nameOut =nameOut.split ("/").back();
-       //pathOut ="./transform/";
+       // pathOut ="./transform/";
        // QGI_Image->set_image (QObject::tr (fileName));
        // QGI_Image->set_image (QObject::tr (QString ("%1").arg (fileName)));
        QGI_Image->set_image (fileName);
@@ -655,10 +714,28 @@ void KrestWindow::openImage( ) {
        update();
        updateGeometry();
     }
-    else
+    else {
        QMessageBox::information(this, tr("Крест"),
                                      tr("Изображение не было открыто %1.").arg(fileName));
+    }
     action_OutImage_2->setEnabled(true);
+}
+
+void KrestWindow::openImage (QString fileName) {
+    if(!fileName.isEmpty ()) {
+       QString name_buf;
+       nameIn = fileName;
+       name_buf=nameIn;
+       QRegExp tiff_regexp ("(.tiff|.bmp|.jpg|.img|.png|.gif|.tif)");
+       nameOut =name_buf.remove (tiff_regexp)+"_tr";
+       nameOut =nameOut.split ("/").back();
+       QGI_Image->set_image (fileName);
+       graphicsView->scaled=1.0;
+       graphicsView->scale(graphicsView->scaled, graphicsView->scaled);
+       update();
+       updateGeometry();
+       action_OutImage_2->setEnabled(true);
+    }
 }
 
 /*bool KrestWindow::saveImage(const QString &fileName, const char *fileFormat) {

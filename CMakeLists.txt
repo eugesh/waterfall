@@ -53,6 +53,7 @@ link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscandb/bin")
 link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscancache/bin")
 link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscanmath/bin")
 link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../pycppwrapper/bin")
+link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../bin")
 set (ADDON_LIBRARIES ${ADDON_LIBRARIES} hyscantypes hyscandb hyscancache hyscanmath hyscancore cpp_acoustic_wrap cpp_bd_wrap)
 
 add_definitions (-DG_LOG_DOMAIN="ImageViewer")

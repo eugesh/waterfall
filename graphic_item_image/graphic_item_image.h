@@ -19,13 +19,13 @@ private:;
 	int list_bands[3];//!< список номеров bandов при формировании растровых данных
 public:;
 	//! конструктор
-	QGraphicsItem_Image(QGraphicsItem * parent = 0);
+	QGraphicsItem_Image (QGraphicsItem * parent = 0);
 	//! задание имени файла с растровыми данными
-	void set_image(const QString &name_file);
+	void set_image (const QString &name_file);
 	//! получение границ
 	virtual QRectF	boundingRect () const;
 	//! отрисовка
-	virtual void	paint ( QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 );
+	virtual void	paint (QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0);
 	//!
 };
 #endif
