@@ -43,6 +43,10 @@ double MathRound(double num, int precision);
 
 // Creates temporal tiff file. Takes path. Returns path + filename.
 QString create_tmp_tiff (QString fullfilename, int w, int h);
+void remove_tmp_tiff (QString fullfilename);
+
+// QSize estimate_tmp_tiff_size (QString project_dir_name, int project_id);
+QMap<long int, unsigned int> estimate_tmp_tiff_size (QSize & out_size, QString project_dir_name, int project_id);
 
 //! Класс, описывающий окно отображения кадра
 class KrestWindow : public QMainWindow , public Ui::MainWindow {
@@ -80,9 +84,10 @@ private:;
     QString tmp_tiff_full_name;
     QString bd_path;
     QString project_dir_name;
-    // int database_id;
     int project_id;
-    int acoustic_data_ch_id;
+    QVector<unsigned int> acoustic_data_ch_ids;
+    // time, id
+    QMap<long int, unsigned int> map_acoustic_data_ch_ids;
     // GDALDataset *ptmp_tiff;
     // GDALDriver *pdriver_tmp_tiff;
 public:;

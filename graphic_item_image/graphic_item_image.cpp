@@ -74,8 +74,8 @@ void QGraphicsItem_Image::paint ( QPainter * painter, const QStyleOptionGraphics
     transform=painter->combinedTransform();
 
     QRectF window_rect_in_LSC;// область устройства отображения в локальной СК
-    QRectF workig_area_in_LSC;// область отображаемых данных в локальной СК
-    QRectF workig_area_in_DSC;// область отображаемых данных в СК устройства отображения
+    QRectF working_area_in_LSC;// область отображаемых данных в локальной СК
+    QRectF working_area_in_DSC;// область отображаемых данных в СК устройства отображения
     qreal xw1,xw2,yw1,yw2;// параметры области отображаемых растровых данных в СК окна
     qreal cf1,cf2,rf1,rf2;// параметры области отображаемых растровых данных в СК растра
 
@@ -88,14 +88,14 @@ void QGraphicsItem_Image::paint ( QPainter * painter, const QStyleOptionGraphics
 
     //printf("1: cf1=%lf cf2=%lf rf1=%lf rf2=%lf\n",cf1,cf2,rf1,rf2);
     // определение области растровых данных требуемой для отображения
-    workig_area_in_LSC=bound.intersected(QRectF(window_rect_in_LSC));
+    working_area_in_LSC=bound.intersected(QRectF(window_rect_in_LSC));
 
     // вычисление области отображаемых данных в СК устройства отображения
-    workig_area_in_DSC=transform.mapRect(workig_area_in_LSC);
+    working_area_in_DSC=transform.mapRect(working_area_in_LSC);
 
     // получение граничных точек прямоугольной области
-    workig_area_in_LSC.getCoords(&cf1, &rf1, &cf2, &rf2);
-    workig_area_in_DSC.getCoords(&xw1, &yw1, &xw2, &yw2);
+    working_area_in_LSC.getCoords(&cf1, &rf1, &cf2, &rf2);
+    working_area_in_DSC.getCoords(&xw1, &yw1, &xw2, &yw2);
 
     //printf("2: cf1=%lf cf2=%lf rf1=%lf rf2=%lf\n",cf1,cf2,rf1,rf2);
 
@@ -114,7 +114,7 @@ void QGraphicsItem_Image::paint ( QPainter * painter, const QStyleOptionGraphics
      int nb_working;// количество используемых слоев
      QImage im;
 
-     if ((!workig_area_in_DSC.isEmpty())&&((number_bands==1)||(number_bands>=3))) {
+     if ((!working_area_in_DSC.isEmpty())&&((number_bands==1)||(number_bands>=3))) {
 
       int ww,hw;// размеры области отображения в пикселях в СК устройств отображения
       int bpp;// байт на пиксель в результирующем растре
@@ -169,7 +169,7 @@ void QGraphicsItem_Image::paint ( QPainter * painter, const QStyleOptionGraphics
       nb_working,list_bands,bpp,im.bytesPerLine(),1);
 
           // отображение данных
-          painter->drawImage(workig_area_in_DSC,im);
+          painter->drawImage(working_area_in_DSC,im);
      };
         // закрытие файла
      GDALClose(pdata);

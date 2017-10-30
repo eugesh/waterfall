@@ -110,22 +110,15 @@ KrestWindow::KrestWindow() {
 	updateActions();
 };
 KrestWindow::~KrestWindow() {
-   /*delete scene;
-   delete QGI_Image;
-   delete QIDSFSMm;
-   delete QIDSFSPx;
-   QList<QGraphicsItem*>items=scene->selectedItems();
-      //qDeleteAll(items);
-   QGraphicsItem *item;
-   Krest * krest;
-   foreach(item,items) {
-      krest = dynamic_cast<Krest *>(item);
-      delete krest;
-   }*/
-   if(RR!=NULL)
-    delete RR;
-   if(pushButtonFit!=NULL)
-    delete pushButtonFit;
+    QString filenameTiff = tmp_tiff_path + "/tmp.tif" ;
+    std::cout << "filenameTiff = " << qPrintable (filenameTiff) << '\n';
+
+    remove_tmp_tiff (filenameTiff);
+
+    if(RR!=NULL)
+        delete RR;
+    if(pushButtonFit!=NULL)
+        delete pushButtonFit;
 }
 void KrestWindow::changeFrameSize(int size) {
    FrameSizePx=size;
@@ -588,20 +581,26 @@ void KrestWindow::openProject() {
 
 	    project_id = open_project (project_dir_name.toAscii().data());
 
-	    acoustic_data_ch_id = acoustic_data_new (project_dir_name.toAscii().data(),"Track01",101,1);
+	    // acoustic_data_ch_ids.append (acoustic_data_new (project_dir_name.toAscii().data(),"Track01",101,1));
+	    acoustic_data_ch_ids.append (acoustic_data_new (project_dir_name.toAscii().data(),"Track03",101,1));
+
+	    QSize tmp_tiff_size;
+	    map_acoustic_data_ch_ids = estimate_tmp_tiff_size (tmp_tiff_size, project_dir_name, project_id);
+	    std::cout << "SIZE: tmpiff_W = " << tmp_tiff_size.width () << ", tmpiff_H = "<< tmp_tiff_size.height () << '\n';
+
 
 	    // Get track range (W = max(values), H = last_index - first_index)
-	    int tmp_tiff_W;
-	    int tmp_tiff_H = get_last_index_in_range (acoustic_data_ch_id) - get_first_index_in_range (acoustic_data_ch_id);
+	    /* int tmp_tiff_W;
+	    int tmp_tiff_H = get_last_index_in_range (acoustic_data_ch_ids.first()) - get_first_index_in_range (acoustic_data_ch_ids.first());
 
 	    for (int i = 0; i < tmp_tiff_H; ++i) {
-	        unsigned int val = get_values_count (acoustic_data_ch_id, i);
+	        unsigned int val = get_values_count (acoustic_data_ch_ids.first(), i);
 	        if (val > tmp_tiff_W)
 	            tmp_tiff_W = val;
 	    }
-	    std::cout << "tmpiff_W = " << tmp_tiff_W << ", tmpiff_H = "<< tmp_tiff_H << '\n';
+	    std::cout << "tmpiff_W = " << tmp_tiff_W << ", tmpiff_H = "<< tmp_tiff_H << '\n';*/
 	    // Create tmp TIFF file
-	    tmp_tiff_full_name = create_tmp_tiff (tmp_tiff_path, tmp_tiff_W, tmp_tiff_H);
+	    tmp_tiff_full_name = create_tmp_tiff (tmp_tiff_path, tmp_tiff_size.width (), tmp_tiff_size.height ());//tmp_tiff_W, tmp_tiff_H);
 	    openImage (tmp_tiff_full_name);
 
 	    action_start_sound_gen->setEnabled (true);
@@ -612,11 +611,49 @@ void KrestWindow::openProject() {
 	}
 }
 
+QMap<long int, unsigned int> estimate_tmp_tiff_size (QSize & out_size, QString project_dir_name, int project_id) {
+    unsigned int tmp_tiff_W = 0;
+    unsigned int tmp_tiff_H = 0;
+    // Time, track id
+    QMap<long int, unsigned int> track_map;
+    QVector<int> acoustic_data_ch_ids;
+
+    const char ** track_list = get_track_list (project_id);
+
+    // Open all tracks
+    for (int i = 0; track_list[i] != 0; ++i) {
+        std::cout << "track_list[" << i << "] = " << track_list[i] << '\n';
+        // getchar();
+        unsigned int id = acoustic_data_new (project_dir_name.toAscii().data(), track_list[i], 101, 1);
+        if (id > 0) {
+            long int time = get_time (id, 0);
+            track_map.insert (time, id);
+        }
+    }
+
+    // Estimate size
+    QMapIterator<long int, unsigned int> i(track_map);
+    while (i.hasNext()) {
+        i.next();
+        unsigned int range = get_last_index_in_range (i.value()) - get_first_index_in_range (i.value());
+        tmp_tiff_H += range;
+        for (int k = 0; k < range; ++k) {
+            unsigned int val = get_values_count (i.value(), k);
+            if (val > tmp_tiff_W)
+                tmp_tiff_W = val;
+        }
+        std::cout << i.key() << ": " << i.value() << std::endl;
+    }
+
+    out_size = QSize (tmp_tiff_W, tmp_tiff_H);
+
+    return track_map;
+}
+
 QString create_tmp_tiff (QString filename, int w, int h) {
-    GDALAllRegister () ;
     GDALDriver*pDriver = (GDALDriver*) GDALGetDriverByName ("GTiff" ) ;
 
-    char block_size_str[100];
+    // char block_size_str[100];
     char **pcreate_str = 0;
 
     int _NumBands = 1 ;
@@ -625,12 +662,13 @@ QString create_tmp_tiff (QString filename, int w, int h) {
     QString filenameTiff = filename + "/tmp.tif" ;
     std::cout << "filenameTiff = " << qPrintable (filenameTiff) << '\n';
 
-	sprintf (block_size_str, "%d", 128);
+	// sprintf (block_size_str, "%d", 128);
 
-	pcreate_str = CSLSetNameValue(pcreate_str, "BLOCKXSIZE", block_size_str);
-	pcreate_str = CSLSetNameValue(pcreate_str, "BLOCKYSIZE", block_size_str);
+	// pcreate_str = CSLSetNameValue(pcreate_str, "BLOCKXSIZE", block_size_str);
+	// pcreate_str = CSLSetNameValue(pcreate_str, "BLOCKYSIZE", block_size_str);
 
-	pcreate_str = CSLSetNameValue(pcreate_str,"TILED","YES");
+	// pcreate_str = CSLSetNameValue(pcreate_str,"TILED","YES");
+    remove_tmp_tiff (filenameTiff);
 
 	GDALDataset *_pData = pDriver->Create( filenameTiff.toLocal8Bit().data(), w, h, _NumBands, GDT_Byte, pcreate_str ) ;
     if(!_pData){
@@ -650,6 +688,12 @@ QString create_tmp_tiff (QString filename, int w, int h) {
     return filenameTiff;
 }
 
+void remove_tmp_tiff (QString filenameTiff) {
+    GDALDriver*pDriver = (GDALDriver*) GDALGetDriverByName ("GTiff" ) ;
+    // QString filenameTiff = fullfilename + "/tmp.tif" ;
+    pDriver->Delete (filenameTiff.toLocal8Bit().data());
+}
+
 void KrestWindow::set_tmp_tiff_path() {
 	tmp_tiff_path = QFileDialog::getExistingDirectory (this, tr("Укажите путь для хранения временных файлов (типа .tiff, .ovr)"), "/home/evgeny/data");
 	if(!tmp_tiff_path.isEmpty ()) {
@@ -667,9 +711,10 @@ void KrestWindow::start_sound_gen () {
    pThread_sound_gen = new SonarEmuThread (this) ;
    pThread_sound_gen->progressbar=progressBar ;
    pThread_sound_gen->set_fullname_tmp_tiff (tmp_tiff_full_name);
-   pThread_sound_gen->set_acoustic_channel_id (acoustic_data_ch_id);
+   pThread_sound_gen->set_acoustic_channel_ids (acoustic_data_ch_ids); // deprecated
    pThread_sound_gen->set_project_id (project_id);
    pThread_sound_gen->set_time_delay (time_delay);
+   pThread_sound_gen->set_map_acoustic_data_ch_ids (map_acoustic_data_ch_ids);
    connect (pThread_sound_gen, SIGNAL (finished ()), this, SLOT (stop_sound_gen ()));
    connect (pThread_sound_gen, SIGNAL (number_worked_lines (int)), this, SLOT (update_scene (int)));
    pThread_sound_gen->start ();

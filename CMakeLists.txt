@@ -5,6 +5,9 @@ project (image_viewer CXX)
 
 include (FindPkgConfig)
 
+set (HYSCAN_MAJOR_VERSION 5)
+set (HYSCAN_TYPES_VERSION 0)
+
 if (NOT CMAKE_BUILD_TYPE)
   set (CMAKE_BUILD_TYPE "Release")
 endif ()
@@ -26,6 +29,8 @@ if (NOT CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
   set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_SOURCE_DIR}/bin")
   set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 endif ()
+
+#find_package( OpenCV REQUIRED )
 
 set (QTLIBS QtGui QtCore QtNetwork)
 find_package (Qt4 REQUIRED)
@@ -54,7 +59,13 @@ link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscancache/bin")
 link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscanmath/bin")
 link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../pycppwrapper/bin")
 link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../bin")
-set (ADDON_LIBRARIES ${ADDON_LIBRARIES} hyscantypes hyscandb hyscancache hyscanmath hyscancore cpp_acoustic_wrap cpp_bd_wrap)
+set (ADDON_LIBRARIES ${ADDON_LIBRARIES} hyscantypes-${HYSCAN_MAJOR_VERSION}
+                                        hyscandb-${HYSCAN_MAJOR_VERSION}
+                                        hyscancache-${HYSCAN_MAJOR_VERSION}
+                                        hyscanmath-${HYSCAN_MAJOR_VERSION}
+                                        hyscancore-${HYSCAN_MAJOR_VERSION}
+                                        cpp_acoustic_wrap
+                                        cpp_bd_wrap)
 
 add_definitions (-DG_LOG_DOMAIN="ImageViewer")
 add_subdirectory ("source")

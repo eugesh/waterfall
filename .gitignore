@@ -4,3 +4,9 @@
 bin
 build
 doc/documentation
+points
+*.zip
+*.tar.gz
+*.dll
+*.docx
+*.doc
