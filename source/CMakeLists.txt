@@ -29,6 +29,6 @@ add_executable (img_viewer
 	            main.cpp
 	            ${MOCSrcs} ${UISrcs})
 
-# target_link_libraries (img_viewer ${ADDON_LIBRARIES} ${GLIB2_LIBRARIES} ${HYSCAN_LIBRARIES} ${QTLIBS} ${QT_LIBRARIES} ${GDAL_LIBRARY} ${OpenCV_LIBS} image_item)
-target_link_libraries (img_viewer ${ADDON_LIBRARIES} ${GLIB2_LIBRARIES} ${HYSCAN_LIBRARIES} ${QTLIBS} ${QT_LIBRARIES} ${GDAL_LIBRARY} image_item)
+target_link_libraries (img_viewer ${ADDON_LIBRARIES} ${GLIB2_LIBRARIES} ${HYSCAN_LIBRARIES} ${QTLIBS} ${QT_LIBRARIES} ${GDAL_LIBRARY} ${OpenCV_LIBS} image_item)
+# target_link_libraries (img_viewer ${ADDON_LIBRARIES} ${GLIB2_LIBRARIES} ${HYSCAN_LIBRARIES} ${QTLIBS} ${QT_LIBRARIES} ${GDAL_LIBRARY} image_item)
 # set_target_properties (img_viewer PROPERTIES DEFINE_SYMBOL "HYSCAN_API_EXPORTS")

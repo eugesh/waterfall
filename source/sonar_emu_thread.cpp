@@ -8,6 +8,7 @@
 #include <cpp-hyscan-db-wrap.h>
 #include <cpp-hyscan-acoustic-data.h>
 
+
 SonarEmuSts::SonarEmuSts () {
     _time_delay = 1.0;
 }

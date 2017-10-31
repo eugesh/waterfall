@@ -30,7 +30,16 @@ if (NOT CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
   set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 endif ()
 
-#find_package( OpenCV REQUIRED )
+find_package( OpenCV REQUIRED )
+
+IF(NOT OpenCV_FOUND)
+    MESSAGE(FATAL_ERROR "OpenCV not found")
+ENDIF()
+set(OpenCV_LIBS opencv_core opencv_highgui)
+
+if(CMAKE_VERSION VERSION_LESS "2.8.11")
+    include_directories(${OpenCV_INCLUDE_DIRS})
+endif()
 
 set (QTLIBS QtGui QtCore QtNetwork)
 find_package (Qt4 REQUIRED)
